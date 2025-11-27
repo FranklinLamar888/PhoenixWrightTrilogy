@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
+using UnityEngine.UI;
 using AccessibilityMod.Core;
 
 namespace AccessibilityMod.Patches
@@ -125,6 +128,14 @@ namespace AccessibilityMod.Patches
     public static class OptionPatches
     {
         private static int _lastCategory = -1;
+        private static int _lastOptionIndex = -1;
+
+        // Reflection cache
+        private static FieldInfo _currentNumField;
+        private static FieldInfo _availableOptionField;
+        private static FieldInfo _optionTitleField;
+
+        private static readonly BindingFlags NonPublicInstance = BindingFlags.NonPublic | BindingFlags.Instance;
 
         // Hook when options menu category changes
         [HarmonyPostfix]
@@ -137,6 +148,7 @@ namespace AccessibilityMod.Patches
                 if (categoryInt != _lastCategory)
                 {
                     _lastCategory = categoryInt;
+                    _lastOptionIndex = -1; // Reset option index when category changes
 
                     string categoryName = GetCategoryName(cat);
                     ClipboardManager.Announce($"Options: {categoryName}", TextType.Menu);
@@ -146,6 +158,224 @@ namespace AccessibilityMod.Patches
             {
                 AccessibilityMod.Core.AccessibilityMod.Logger?.Error($"Error in Options ChangeCategory patch: {ex.Message}");
             }
+        }
+
+        // Hook when navigating between options within a category
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(optionCtrl), "SelectItemSet")]
+        public static void SelectItemSet_Postfix(optionCtrl __instance)
+        {
+            try
+            {
+                int currentIndex = GetCurrentOptionIndex(__instance);
+                if (currentIndex == _lastOptionIndex || currentIndex < 0)
+                    return;
+
+                _lastOptionIndex = currentIndex;
+
+                var options = GetAvailableOptions(__instance);
+                if (options == null || currentIndex >= options.Count)
+                    return;
+
+                var currentOption = options[currentIndex];
+                string optionName = GetOptionName(currentOption);
+                string currentValue = GetOptionValue(currentOption);
+                int totalCount = options.Count;
+
+                string message;
+                if (!Net35Extensions.IsNullOrWhiteSpace(currentValue))
+                    message = $"{optionName}: {currentValue} ({currentIndex + 1} of {totalCount})";
+                else
+                    message = $"{optionName} ({currentIndex + 1} of {totalCount})";
+
+                ClipboardManager.Announce(message, TextType.Menu);
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Error($"Error in Options SelectItemSet patch: {ex.Message}");
+            }
+        }
+
+        // Hook value changes for gauge-type options (BGM, SE)
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(optionBgm), "ChangeValue")]
+        public static void OptionBgm_ChangeValue_Postfix(optionItem __instance)
+        {
+            AnnounceOptionValue(__instance);
+        }
+
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(optionSe), "ChangeValue")]
+        public static void OptionSe_ChangeValue_Postfix(optionItem __instance)
+        {
+            AnnounceOptionValue(__instance);
+        }
+
+        // Hook value changes for toggle-type options
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(optionToggleItem), "ChangeValue")]
+        public static void OptionToggle_ChangeValue_Postfix(optionItem __instance)
+        {
+            AnnounceOptionValue(__instance);
+        }
+
+        // Hook value changes for skip option
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(optionSkip), "ChangeValue")]
+        public static void OptionSkip_ChangeValue_Postfix(optionItem __instance)
+        {
+            AnnounceOptionValue(__instance);
+        }
+
+        // Hook value changes for window transparency option
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(optionWindow), "ChangeValue")]
+        public static void OptionWindow_ChangeValue_Postfix(optionItem __instance)
+        {
+            AnnounceOptionValue(__instance);
+        }
+
+        // Hook value changes for vibration option (extends optionItem directly)
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(optionVibration), "ChangeValue")]
+        public static void OptionVibration_ChangeValue_Postfix(optionItem __instance)
+        {
+            AnnounceOptionValue(__instance);
+        }
+
+        // Hook value changes for select-type options (language, resolution, window mode, auto-speed)
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(optionSelectItem), "ChangeValue")]
+        public static void OptionSelect_ChangeValue_Postfix(optionItem __instance)
+        {
+            AnnounceOptionValue(__instance);
+        }
+
+        private static void AnnounceOptionValue(optionItem item)
+        {
+            try
+            {
+                string value = GetOptionValue(item);
+                if (!Net35Extensions.IsNullOrWhiteSpace(value))
+                {
+                    ClipboardManager.Announce(value, TextType.Menu);
+                }
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Error($"Error announcing option value: {ex.Message}");
+            }
+        }
+
+        private static int GetCurrentOptionIndex(optionCtrl ctrl)
+        {
+            try
+            {
+                if (_currentNumField == null)
+                    _currentNumField = typeof(optionCtrl).GetField("current_num_", NonPublicInstance);
+
+                if (_currentNumField != null)
+                    return (int)_currentNumField.GetValue(ctrl);
+            }
+            catch { }
+            return -1;
+        }
+
+        private static List<optionItem> GetAvailableOptions(optionCtrl ctrl)
+        {
+            try
+            {
+                if (_availableOptionField == null)
+                    _availableOptionField = typeof(optionCtrl).GetField("available_option_", NonPublicInstance);
+
+                if (_availableOptionField != null)
+                    return _availableOptionField.GetValue(ctrl) as List<optionItem>;
+            }
+            catch { }
+            return null;
+        }
+
+        private static string GetOptionName(optionItem item)
+        {
+            try
+            {
+                if (_optionTitleField == null)
+                    _optionTitleField = typeof(optionItem).GetField("option_title_", NonPublicInstance);
+
+                if (_optionTitleField != null)
+                {
+                    var titleText = _optionTitleField.GetValue(item) as Text;
+                    if (titleText != null && !Net35Extensions.IsNullOrWhiteSpace(titleText.text))
+                        return titleText.text;
+                }
+            }
+            catch { }
+            return "Unknown option";
+        }
+
+        private static string GetOptionValue(optionItem item)
+        {
+            try
+            {
+                Type itemType = item.GetType();
+
+                // Try gauge type pattern first (optionBgm, optionSe)
+                // These have gauge_ field with count_text_.text
+                var gaugeField = FindField(itemType, "gauge_");
+                if (gaugeField != null)
+                {
+                    var gauge = gaugeField.GetValue(item);
+                    if (gauge != null)
+                    {
+                        var countTextField = gauge.GetType().GetField("count_text_");
+                        if (countTextField != null)
+                        {
+                            var countText = countTextField.GetValue(gauge) as Text;
+                            if (countText != null && !Net35Extensions.IsNullOrWhiteSpace(countText.text))
+                            {
+                                return countText.text;
+                            }
+                        }
+                    }
+                }
+
+                // Try toggle/select type pattern (optionToggleItem, optionSkip, optionShake, optionWindow, etc.)
+                // These have select_text_[] array and setting_value_ index
+                var selectTextField = FindField(itemType, "select_text_");
+                var settingValueField = FindField(itemType, "setting_value_");
+
+                if (selectTextField != null && settingValueField != null)
+                {
+                    var selectTexts = selectTextField.GetValue(item) as string[];
+                    int settingValue = (int)settingValueField.GetValue(item);
+                    if (selectTexts != null && settingValue >= 0 && settingValue < selectTexts.Length)
+                    {
+                        return selectTexts[settingValue];
+                    }
+                }
+
+                // Fallback: try to get setting_value_ as a number
+                if (settingValueField != null)
+                {
+                    int settingValue = (int)settingValueField.GetValue(item);
+                    return settingValue.ToString();
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        // Helper to find a field in a type or its base types
+        private static FieldInfo FindField(Type type, string fieldName)
+        {
+            while (type != null && type != typeof(object))
+            {
+                var field = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                if (field != null)
+                    return field;
+                type = type.BaseType;
+            }
+            return null;
         }
 
         private static string GetCategoryName(optionCtrl.Category category)

@@ -84,6 +84,10 @@ namespace AccessibilityMod.Core
             sb.Replace("\\'", "'");
             sb.Replace("\\\\", "\\");
 
+            // Replace special characters that TTS can't read
+            sb.Replace("☓", " by ");  // Multiplication sign used in resolution (e.g., 1920☓1080)
+            sb.Replace("×", " by ");  // Alternative multiplication sign
+
             return sb.ToString();
         }
 
