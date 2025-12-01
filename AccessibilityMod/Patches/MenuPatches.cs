@@ -18,6 +18,9 @@ namespace AccessibilityMod.Patches
         // Main menu tracking
         private static int _lastSeriesTitle = -1;
 
+        // Scenario selection tracking (Play Title episode selection)
+        private static int _lastScenarioEpisode = -1;
+
         #region Main Title Menu Patches
 
         // Main title menu initialization - announce when main menu appears
@@ -338,6 +341,147 @@ namespace AccessibilityMod.Patches
                     return "Phoenix Wright: Ace Attorney - Trials and Tribulations";
                 default:
                     return $"Game {(int)titleId + 1}";
+            }
+        }
+
+        #endregion
+
+        #region Scenario Selection Patches (Play Title Episode Selection)
+
+        // Scenario selection - announce when entering episode selection via "Play Title"
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(scenarioSelectCtrl), "Play")]
+        public static void ScenarioSelect_Play_Postfix(scenarioSelectCtrl __instance)
+        {
+            try
+            {
+                _lastScenarioEpisode = -1;
+                string message = "Episode selection. Use left and right to choose episode.";
+                ClipboardManager.Announce(message, TextType.Menu);
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Error(
+                    $"Error in ScenarioSelect_Play patch: {ex.Message}"
+                );
+            }
+        }
+
+        // Scenario selection - announce episode name when arrows update (after navigation)
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(scenarioSelectCtrl), "ArrowOn")]
+        public static void ScenarioSelect_ArrowOn_Postfix(scenarioSelectCtrl __instance)
+        {
+            try
+            {
+                var currentNumField = typeof(scenarioSelectCtrl).GetField(
+                    "current_num_",
+                    System.Reflection.BindingFlags.NonPublic
+                        | System.Reflection.BindingFlags.Instance
+                );
+                if (currentNumField == null)
+                    return;
+
+                int currentNum = (int)currentNumField.GetValue(__instance);
+
+                if (currentNum == _lastScenarioEpisode)
+                    return;
+
+                _lastScenarioEpisode = currentNum;
+
+                string episodeName = GetScenarioEpisodeName(currentNum);
+                ClipboardManager.Announce(episodeName, TextType.Menu);
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Error(
+                    $"Error in ScenarioSelect_ArrowOn patch: {ex.Message}"
+                );
+            }
+        }
+
+        // Scenario selection - announce confirmation dialog message
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(scenarioSelectCtrl), "SetMessage")]
+        public static void ScenarioSelect_SetMessage_Postfix(
+            scenarioSelectCtrl __instance,
+            int in_title,
+            int in_story
+        )
+        {
+            try
+            {
+                var startTextField = typeof(scenarioSelectCtrl).GetField(
+                    "start_text_",
+                    System.Reflection.BindingFlags.NonPublic
+                        | System.Reflection.BindingFlags.Instance
+                );
+                if (startTextField == null)
+                    return;
+
+                var startText = startTextField.GetValue(__instance) as List<UnityEngine.UI.Text>;
+                if (startText == null || startText.Count == 0)
+                    return;
+
+                string message = "";
+                foreach (var text in startText)
+                {
+                    if (text != null && !Core.Net35Extensions.IsNullOrWhiteSpace(text.text))
+                    {
+                        if (!Core.Net35Extensions.IsNullOrWhiteSpace(message))
+                            message += " ";
+                        message += text.text;
+                    }
+                }
+
+                if (!Core.Net35Extensions.IsNullOrWhiteSpace(message))
+                {
+                    ClipboardManager.Announce(message, TextType.Menu);
+                }
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Error(
+                    $"Error in ScenarioSelect_SetMessage patch: {ex.Message}"
+                );
+            }
+        }
+
+        // Scenario selection - reset state on exit
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(scenarioSelectCtrl), "End")]
+        public static void ScenarioSelect_End_Postfix()
+        {
+            _lastScenarioEpisode = -1;
+        }
+
+        private static string GetScenarioEpisodeName(int episodeIndex)
+        {
+            try
+            {
+                TitleId title = GSStatic.global_work_.title;
+                TextDataCtrl.TitleTextID textId;
+
+                switch (title)
+                {
+                    case TitleId.GS1:
+                        textId = TextDataCtrl.TitleTextID.GS1_SCENARIO_NAME;
+                        break;
+                    case TitleId.GS2:
+                        textId = TextDataCtrl.TitleTextID.GS2_SCENARIO_NAME;
+                        break;
+                    case TitleId.GS3:
+                        textId = TextDataCtrl.TitleTextID.GS3_SCENARIO_NAME;
+                        break;
+                    default:
+                        return $"Episode {episodeIndex + 1}";
+                }
+
+                return TextDataCtrl.GetText(textId, episodeIndex);
+            }
+            catch
+            {
+                return $"Episode {episodeIndex + 1}";
             }
         }
 
