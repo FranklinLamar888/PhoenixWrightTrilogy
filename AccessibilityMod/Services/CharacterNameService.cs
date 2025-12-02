@@ -18,6 +18,7 @@ namespace AccessibilityMod.Services
         {
             // Main characters
             { 2, "Phoenix Wright" },
+            { 3, "Police Officer" },
             { 4, "Maya Fey" },
             { 5, "Mia Fey" }, // Channeled by Maya
             { 7, "Mia Fey" },
@@ -43,6 +44,9 @@ namespace AccessibilityMod.Services
             { 33, "Manfred von Karma" },
             { 34, "Parrot" },
             { 36, "Caretaker" },
+            { 37, "Bailiff" },
+            { 38, "Teacher" },
+            { 39, "Miles Edgeworth" },
             // Rise from the Ashes (episode 5)
             { 45, "Lana Skye" },
             { 46, "Ema Skye" },
