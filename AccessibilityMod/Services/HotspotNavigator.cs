@@ -30,8 +30,16 @@ namespace AccessibilityMod.Services
 
         public static void RefreshHotspots()
         {
+            // Remember the current hotspot's identity before clearing
+            uint? previousMessageId = null;
+            int? previousDataIndex = null;
+            if (_hotspots.Count > 0 && _currentIndex < _hotspots.Count)
+            {
+                previousMessageId = _hotspots[_currentIndex].MessageId;
+                previousDataIndex = _hotspots[_currentIndex].DataIndex;
+            }
+
             _hotspots.Clear();
-            _currentIndex = 0;
 
             try
             {
@@ -95,12 +103,27 @@ namespace AccessibilityMod.Services
                     h.Description = $"Point {i + 1} ({posDesc})";
                 }
 
+                // Restore position to previously selected hotspot if it still exists
+                _currentIndex = 0;
+                if (previousMessageId.HasValue && _hotspots.Count > 0)
+                {
+                    for (int i = 0; i < _hotspots.Count; i++)
+                    {
+                        if (_hotspots[i].MessageId == previousMessageId.Value)
+                        {
+                            _currentIndex = i;
+                            break;
+                        }
+                    }
+                }
+
                 AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
-                    $"Found {_hotspots.Count} hotspots"
+                    $"Found {_hotspots.Count} hotspots, position restored to {_currentIndex + 1}"
                 );
             }
             catch (Exception ex)
             {
+                _currentIndex = 0;
                 AccessibilityMod.Core.AccessibilityMod.Logger?.Error(
                     $"Error refreshing hotspots: {ex.Message}"
                 );
