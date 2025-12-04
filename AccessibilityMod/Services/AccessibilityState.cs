@@ -105,6 +105,11 @@ namespace AccessibilityMod.Services
             return FingerprintNavigator.IsFingerprintActive();
         }
 
+        public static bool IsInVideoTapeMode()
+        {
+            return VideoTapeNavigator.IsVideoTapeActive();
+        }
+
         public static void AnnounceCurrentState()
         {
             try
@@ -133,6 +138,12 @@ namespace AccessibilityMod.Services
                 {
                     // Delegate to FingerprintNavigator for detailed state
                     FingerprintNavigator.AnnounceState();
+                    return;
+                }
+                else if (IsInVideoTapeMode())
+                {
+                    // Delegate to VideoTapeNavigator for detailed state
+                    VideoTapeNavigator.AnnounceState();
                     return;
                 }
                 else if (IsInPointingMode())

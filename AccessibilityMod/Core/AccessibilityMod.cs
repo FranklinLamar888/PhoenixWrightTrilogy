@@ -56,6 +56,7 @@ namespace AccessibilityMod.Core
                 LuminolNavigator.Update();
                 VasePuzzleNavigator.Update();
                 FingerprintNavigator.Update();
+                VideoTapeNavigator.Update();
 
                 HandleInput();
             }
@@ -132,6 +133,26 @@ namespace AccessibilityMod.Core
                 if (Input.GetKeyDown(KeyCode.H))
                 {
                     FingerprintNavigator.AnnounceHint();
+                }
+            }
+            // Video tape examination mode (GS1 Episode 5)
+            else if (AccessibilityState.IsInVideoTapeMode())
+            {
+                // [ and ] - Navigate to targets when paused
+                if (Input.GetKeyDown(KeyCode.LeftBracket))
+                {
+                    VideoTapeNavigator.NavigateToPreviousTarget();
+                }
+
+                if (Input.GetKeyDown(KeyCode.RightBracket))
+                {
+                    VideoTapeNavigator.NavigateToNextTarget();
+                }
+
+                // H - Get hint for current viewing
+                if (Input.GetKeyDown(KeyCode.H))
+                {
+                    VideoTapeNavigator.AnnounceHint();
                 }
             }
             // Pointing mode navigation (court maps, etc.)
