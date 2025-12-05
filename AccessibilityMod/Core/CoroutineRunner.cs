@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using AccessibilityMod.Patches;
 using UnityEngine;
 
 namespace AccessibilityMod.Core
@@ -82,7 +83,12 @@ namespace AccessibilityMod.Core
                     string optionText = GetSelectPlateOptionText(cursorNo);
                     if (!Net35Extensions.IsNullOrWhiteSpace(optionText))
                     {
-                        ClipboardManager.Announce(optionText, TextType.MenuChoice);
+                        // Format with checkmark status from MenuPatches
+                        string announcement = MenuPatches.FormatSelectOptionAnnouncement(
+                            optionText,
+                            cursorNo
+                        );
+                        ClipboardManager.Announce(announcement, TextType.MenuChoice);
                     }
                     _lastSelectPlateCursor = cursorNo;
                 }

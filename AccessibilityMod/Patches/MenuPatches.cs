@@ -15,6 +15,11 @@ namespace AccessibilityMod.Patches
         private static string[] _tanteiMenuOptions = new string[4];
         private static List<string> _selectOptions = new List<string>();
 
+        // Exposed for CoroutineRunner to access checkmark status
+        internal static List<bool> SelectOptionsRead = new List<bool>();
+        internal static List<bool> SelectOptionsPsyLock = new List<bool>();
+        internal static bool IsTalkMenu = false;
+
         // Main menu tracking
         private static int _lastSeriesTitle = -1;
 
@@ -687,11 +692,54 @@ namespace AccessibilityMod.Patches
                     _selectOptions.Add("");
                 }
                 _selectOptions[index] = text;
+
+                // Also expand read/psylock tracking lists
+                while (SelectOptionsRead.Count <= index)
+                {
+                    SelectOptionsRead.Add(false);
+                }
+                while (SelectOptionsPsyLock.Count <= index)
+                {
+                    SelectOptionsPsyLock.Add(false);
+                }
+                // Reset read state when text is set (will be updated by setRead if this is a talk menu)
+                SelectOptionsRead[index] = false;
+                SelectOptionsPsyLock[index] = false;
             }
             catch (Exception ex)
             {
                 AccessibilityMod.Core.AccessibilityMod.Logger?.Error(
                     $"Error in SetText patch: {ex.Message}"
+                );
+            }
+        }
+
+        // Selection plate read state setting (talk menu checkmarks)
+        [HarmonyPostfix]
+        [HarmonyPatch(typeof(selectPlateCtrl), "setRead")]
+        public static void SetRead_Postfix(int index, bool is_read, bool is_psylooc)
+        {
+            try
+            {
+                IsTalkMenu = true;
+
+                // Ensure list is big enough
+                while (SelectOptionsRead.Count <= index)
+                {
+                    SelectOptionsRead.Add(false);
+                }
+                while (SelectOptionsPsyLock.Count <= index)
+                {
+                    SelectOptionsPsyLock.Add(false);
+                }
+
+                SelectOptionsRead[index] = is_read;
+                SelectOptionsPsyLock[index] = is_psylooc;
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Error(
+                    $"Error in SetRead patch: {ex.Message}"
                 );
             }
         }
@@ -710,7 +758,11 @@ namespace AccessibilityMod.Patches
                     string currentOption = _selectOptions[__instance.cursor_no];
                     if (!Core.Net35Extensions.IsNullOrWhiteSpace(currentOption))
                     {
-                        ClipboardManager.Announce(currentOption, TextType.MenuChoice);
+                        string announcement = FormatSelectOptionAnnouncement(
+                            currentOption,
+                            __instance.cursor_no
+                        );
+                        ClipboardManager.Announce(announcement, TextType.MenuChoice);
                     }
                 }
 
@@ -724,24 +776,19 @@ namespace AccessibilityMod.Patches
             }
         }
 
-        // Selection plate cursor position change
+        // Selection plate cursor position change (touch input only)
+        // Note: Announcements are now handled by PlaySE_Postfix to avoid duplicates
         [HarmonyPostfix]
         [HarmonyPatch(typeof(selectPlateCtrl), "SetCursorNo")]
         public static void SetCursorNo_Postfix(selectPlateCtrl __instance, int in_cursor_no)
         {
             try
             {
+                // Only track cursor position - announcements handled by PlaySE patch
+                // Touch input also plays SE 42, so PlaySE_Postfix will announce
                 if (in_cursor_no != _lastSelectCursor && __instance.body_active)
                 {
                     _lastSelectCursor = in_cursor_no;
-                    if (in_cursor_no >= 0 && in_cursor_no < _selectOptions.Count)
-                    {
-                        string option = _selectOptions[in_cursor_no];
-                        if (!Core.Net35Extensions.IsNullOrWhiteSpace(option))
-                        {
-                            ClipboardManager.Announce(option, TextType.MenuChoice);
-                        }
-                    }
                 }
             }
             catch (Exception ex)
@@ -760,6 +807,9 @@ namespace AccessibilityMod.Patches
             try
             {
                 _selectOptions.Clear();
+                SelectOptionsRead.Clear();
+                SelectOptionsPsyLock.Clear();
+                IsTalkMenu = false;
                 _lastSelectCursor = -1;
             }
             catch (Exception ex)
@@ -768,6 +818,35 @@ namespace AccessibilityMod.Patches
                     $"Error in End patch: {ex.Message}"
                 );
             }
+        }
+
+        /// <summary>
+        /// Formats the announcement for a select option, including checkmark status for talk menus.
+        /// </summary>
+        internal static string FormatSelectOptionAnnouncement(string optionText, int index)
+        {
+            // Only add read status for talk menus (where setRead was called)
+            if (!IsTalkMenu)
+            {
+                return optionText;
+            }
+
+            // Check if we have read status for this index
+            bool isRead = index < SelectOptionsRead.Count && SelectOptionsRead[index];
+            bool hasPsyLock = index < SelectOptionsPsyLock.Count && SelectOptionsPsyLock[index];
+
+            if (hasPsyLock)
+            {
+                // Topic has a psyche-lock (secret that needs to be unlocked)
+                return $"{optionText} (locked)";
+            }
+            else if (isRead)
+            {
+                // Topic has been discussed (checkmark)
+                return $"{optionText} (discussed)";
+            }
+
+            return optionText;
         }
 
         #endregion
