@@ -652,7 +652,7 @@ namespace AccessibilityMod.Services
 
                 if (overHotspot)
                 {
-                    message += " Press A to examine.";
+                    message += " Press Enter to examine.";
                 }
                 else
                 {
@@ -686,7 +686,10 @@ namespace AccessibilityMod.Services
         {
             if (IsOverHotspot())
             {
-                ClipboardManager.Announce("Hotspot detected, press A to examine", TextType.Menu);
+                ClipboardManager.Announce(
+                    "Hotspot detected, press Enter to examine",
+                    TextType.Menu
+                );
             }
             else
             {

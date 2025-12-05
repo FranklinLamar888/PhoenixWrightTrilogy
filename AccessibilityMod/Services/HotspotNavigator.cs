@@ -352,7 +352,8 @@ namespace AccessibilityMod.Services
                 {
                     message += $", {unexamined} unexamined";
                 }
-                message += ". Use [ and ] to navigate, H to list all.";
+                message +=
+                    ". Use [ and ] to navigate, U to jump to next unexamined point, H to list all.";
                 ClipboardManager.Announce(message, TextType.Investigation);
             }
             else

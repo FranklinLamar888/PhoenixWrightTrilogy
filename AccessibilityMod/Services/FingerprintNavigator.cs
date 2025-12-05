@@ -38,7 +38,7 @@ namespace AccessibilityMod.Services
         // Note: indices 1 and 2 are swapped from the Japanese constant names
         private static readonly string[] CharacterNames = new string[]
         {
-            "Angel Starr", // 0
+            "Ema Skye", // 0
             "Mike Meekins", // 1 (SW_HUMAN_TOMOE in Japanese)
             "Jake Marshall", // 2 (SW_HUMAN_ZAIMON in Japanese)
             "Lana Skye", // 3
@@ -52,7 +52,7 @@ namespace AccessibilityMod.Services
         private static readonly int[] DisplayToCharacter = new int[] { 6, 5, 2, 4, 7, 1, 0, 3 };
 
         // Correct character index for each game (from finger_info[].correct)
-        private static readonly int[] CorrectAnswers = new int[] { 7, 2, 0 }; // Gumshoe, Jake Marshall, Starr
+        private static readonly int[] CorrectAnswers = new int[] { 7, 2, 0 }; // Gumshoe, Jake Marshall, Ema
 
         /// <summary>
         /// Checks if the fingerprint mini-game is currently active.
@@ -427,93 +427,17 @@ namespace AccessibilityMod.Services
         private static void AnnouncePowderHint()
         {
             ClipboardManager.Announce(
-                "Move cursor with arrow keys while holding Enter to spread powder across the area. Press E to blow away excess and reveal the print.",
+                "Move cursor with arrow keys while pressing Enter to spread powder across the area. Press E to blow away excess and reveal the print.",
                 TextType.Investigation
             );
         }
 
         private static void AnnounceComparisonHint()
         {
-            try
-            {
-                int gameId = FingerMiniGame.instance.game_id;
-
-                if (gameId < 0 || gameId >= CorrectAnswers.Length)
-                {
-                    ClipboardManager.Announce(
-                        "Use Left/Right to select suspect, E to compare.",
-                        TextType.Investigation
-                    );
-                    return;
-                }
-
-                int correctCharIndex = CorrectAnswers[gameId];
-
-                // Find which display position has this character
-                int correctPosition = -1;
-                for (int i = 0; i < DisplayToCharacter.Length; i++)
-                {
-                    if (DisplayToCharacter[i] == correctCharIndex)
-                    {
-                        correctPosition = i;
-                        break;
-                    }
-                }
-
-                // Get current cursor position
-                var cursorField = typeof(FingerMiniGame).GetField(
-                    "comp_cursor_",
-                    BindingFlags.NonPublic | BindingFlags.Instance
-                );
-
-                int currentCursor = 0;
-                if (cursorField != null)
-                {
-                    currentCursor = (int)cursorField.GetValue(FingerMiniGame.instance);
-                }
-
-                string correctName = CharacterNames[correctCharIndex];
-
-                if (currentCursor == correctPosition)
-                {
-                    ClipboardManager.Announce(
-                        $"Correct! {correctName} is selected. Press E to compare.",
-                        TextType.Investigation
-                    );
-                }
-                else
-                {
-                    int distance = correctPosition - currentCursor;
-                    if (distance < 0)
-                        distance += 8;
-                    int reverseDistance = 8 - distance;
-
-                    if (distance <= reverseDistance)
-                    {
-                        ClipboardManager.Announce(
-                            $"Select {correctName}. Press Right {distance} time{(distance != 1 ? "s" : "")}.",
-                            TextType.Investigation
-                        );
-                    }
-                    else
-                    {
-                        ClipboardManager.Announce(
-                            $"Select {correctName}. Press Left {reverseDistance} time{(reverseDistance != 1 ? "s" : "")}.",
-                            TextType.Investigation
-                        );
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                AccessibilityMod.Core.AccessibilityMod.Logger?.Error(
-                    $"Error getting comparison hint: {ex.Message}"
-                );
-                ClipboardManager.Announce(
-                    "Use Left/Right to select, E to compare.",
-                    TextType.Investigation
-                );
-            }
+            ClipboardManager.Announce(
+                "Use Left/Right to select suspect, E to compare.",
+                TextType.Investigation
+            );
         }
 
         /// <summary>

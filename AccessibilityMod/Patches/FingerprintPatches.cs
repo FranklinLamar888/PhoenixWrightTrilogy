@@ -15,7 +15,7 @@ namespace AccessibilityMod.Patches
         // Note: indices 1 and 2 are swapped from the Japanese constant names
         private static readonly string[] CharacterNames = new string[]
         {
-            "Angel Starr", // 0
+            "Ema Skye", // 0
             "Mike Meekins", // 1 (SW_HUMAN_TOMOE in Japanese)
             "Jake Marshall", // 2 (SW_HUMAN_ZAIMON in Japanese)
             "Lana Skye", // 3

@@ -141,7 +141,7 @@ namespace AccessibilityMod.Patches
                 // Check if item has details available
                 if (currentItem.detail_id != 0 || currentItem.obj_id != 0)
                 {
-                    sb.Append(" - Press A for details");
+                    sb.Append(" - Press Enter for details");
                 }
 
                 ClipboardManager.Announce(sb.ToString(), TextType.Menu);
@@ -288,7 +288,7 @@ namespace AccessibilityMod.Patches
                     sb.Append(" Press left or right for pages.");
                 }
 
-                sb.Append(" Press B to close.");
+                sb.Append(" Press Backspace to close.");
                 ClipboardManager.Announce(sb.ToString(), TextType.Menu);
             }
             catch (Exception ex)

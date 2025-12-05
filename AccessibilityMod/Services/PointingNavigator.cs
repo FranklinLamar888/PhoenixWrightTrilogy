@@ -71,13 +71,13 @@ namespace AccessibilityMod.Services
             if (_points.Count > 0)
             {
                 string message =
-                    $"Pointing mode. {_points.Count} target areas. Use [ and ] to navigate, Enter or X to select.";
+                    $"Pointing mode. {_points.Count} target areas. Use [ and ] to navigate, E to present.";
                 ClipboardManager.Announce(message, TextType.Trial);
             }
             else
             {
                 ClipboardManager.Announce(
-                    "Pointing mode. Use arrow keys to move cursor, Enter or X to select.",
+                    "Pointing mode. Use arrow keys to move cursor, E to present.",
                     TextType.Trial
                 );
             }
