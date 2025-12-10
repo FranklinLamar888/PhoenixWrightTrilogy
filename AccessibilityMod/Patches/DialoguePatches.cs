@@ -411,15 +411,24 @@ namespace AccessibilityMod.Patches
                 // Replace button placeholders with actual key names
                 text = ReplaceButtonPlaceholders(ctrl, text);
 
-                // Get speaker name
+                // Get speaker name only if the name plate is actually visible
+                // This is more robust than caching speaker IDs, as the game may display
+                // text without a speaker (credits, narration) without explicitly clearing the name
                 string speakerName = "";
-                if (_lastSpeakerId > 0)
+                bool namePlateVisible = false;
+                try
+                {
+                    namePlateVisible = ctrl.sprite_name != null && ctrl.sprite_name.active;
+                }
+                catch { }
+
+                if (namePlateVisible && _lastSpeakerId > 0)
                 {
                     speakerName = CharacterNameService.GetName(_lastSpeakerId);
                 }
 
-                // Also try to get from GSStatic if available
-                if (Net35Extensions.IsNullOrWhiteSpace(speakerName))
+                // Also try to get from GSStatic if available (only if name plate is visible)
+                if (Net35Extensions.IsNullOrWhiteSpace(speakerName) && namePlateVisible)
                 {
                     try
                     {
