@@ -125,11 +125,14 @@ namespace AccessibilityMod.Services
         private static readonly Dictionary<int, string> GS3_NAMES = new Dictionary<int, string>
         {
             { 3, "Phoenix Wright" },
+            { 4, "Maya Fey" },
             { 5, "Judge" },
             { 7, "Mia Fey" },
             { 9, "Winston Payne" },
             { 11, "Dahlia Hawthorne" },
+            { 30, "Pearl Fey" },
             { 42, "Marvin Grossberg" },
+            { 50, "Doug Swallow" },
         };
 
         public static void Initialize()
