@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace AccessibilityMod.Services
 {
@@ -7,9 +8,35 @@ namespace AccessibilityMod.Services
     /// Service for providing accessibility descriptions for evidence detail views.
     /// The game displays evidence details as images with no text, so this service
     /// provides hand-written descriptions keyed by game and detail_id.
+    /// Supports hot-reload from external text files in UserData folder.
     /// </summary>
     public static class EvidenceDetailService
     {
+        private static bool _initialized = false;
+
+        // Page separator in text files
+        private const string PAGE_SEPARATOR = "===";
+
+        // Override dictionaries loaded from external text files
+        private static Dictionary<int, DetailDescription> _gs1Overrides =
+            new Dictionary<int, DetailDescription>();
+        private static Dictionary<int, DetailDescription> _gs2Overrides =
+            new Dictionary<int, DetailDescription>();
+        private static Dictionary<int, DetailDescription> _gs3Overrides =
+            new Dictionary<int, DetailDescription>();
+
+        private static string EvidenceDetailsFolder
+        {
+            get
+            {
+                string gameDir = AppDomain.CurrentDomain.BaseDirectory;
+                return Path.Combine(
+                    Path.Combine(Path.Combine(gameDir, "UserData"), "AccessibilityMod"),
+                    "EvidenceDetails"
+                );
+            }
+        }
+
         /// <summary>
         /// Represents accessibility descriptions for an evidence detail view.
         /// </summary>
@@ -33,6 +60,199 @@ namespace AccessibilityMod.Services
             {
                 get { return Pages != null ? Pages.Length : 0; }
             }
+        }
+
+        public static void Initialize()
+        {
+            if (_initialized)
+                return;
+
+            _initialized = true;
+            LoadOverridesFromFiles();
+            AccessibilityMod.Core.AccessibilityMod.Logger?.Msg("EvidenceDetailService initialized");
+        }
+
+        /// <summary>
+        /// Reload evidence detail overrides from external text files.
+        /// Call this to hot-reload changes without restarting the game.
+        /// </summary>
+        public static void ReloadFromFiles()
+        {
+            LoadOverridesFromFiles();
+            AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                "EvidenceDetailService reloaded from files"
+            );
+        }
+
+        private static void LoadOverridesFromFiles()
+        {
+            _gs1Overrides.Clear();
+            _gs2Overrides.Clear();
+            _gs3Overrides.Clear();
+
+            try
+            {
+                string baseFolder = EvidenceDetailsFolder;
+
+                // Create folder structure if needed
+                EnsureFolderStructure(baseFolder);
+
+                // Load override files from each game folder
+                LoadGameFolder(Path.Combine(baseFolder, "GS1"), _gs1Overrides);
+                LoadGameFolder(Path.Combine(baseFolder, "GS2"), _gs2Overrides);
+                LoadGameFolder(Path.Combine(baseFolder, "GS3"), _gs3Overrides);
+
+                int totalOverrides =
+                    _gs1Overrides.Count + _gs2Overrides.Count + _gs3Overrides.Count;
+                if (totalOverrides > 0)
+                {
+                    AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                        $"Loaded {totalOverrides} evidence detail overrides from text files"
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Warning(
+                    $"Error loading evidence detail overrides: {ex.Message}"
+                );
+            }
+        }
+
+        private static void EnsureFolderStructure(string baseFolder)
+        {
+            try
+            {
+                string[] gameFolders = { "GS1", "GS2", "GS3" };
+                foreach (string game in gameFolders)
+                {
+                    string gameFolder = Path.Combine(baseFolder, game);
+                    if (!Directory.Exists(gameFolder))
+                    {
+                        Directory.CreateDirectory(gameFolder);
+                        AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                            $"Created folder: {gameFolder}"
+                        );
+                    }
+                }
+
+                // Create a sample/readme file in GS1 folder
+                string samplePath = Path.Combine(Path.Combine(baseFolder, "GS1"), "_README.txt");
+                if (!File.Exists(samplePath))
+                {
+                    string sampleContent =
+                        @"Evidence Detail Override Files
+==============================
+
+Place text files in this folder to override evidence detail descriptions.
+Each file should be named with the detail ID (e.g., 9.txt for detail ID 9).
+
+File format:
+- Plain text content for each page
+- Separate multiple pages with === on its own line
+
+Example (save as 9.txt):
+---
+Case Summary:
+12/28, 2001
+Elevator, District Court.
+Air in elevator was oxygen depleted at time of incident.
+===
+Victim Data:
+Gregory Edgeworth (Age 35)
+Defense attorney.
+===
+Suspect Data:
+Yanni Yogi (Age 37)
+Court bailiff.
+---
+
+Press F5 in-game to reload after making changes.
+";
+                    File.WriteAllText(samplePath, sampleContent);
+                    AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                        "Created sample README in EvidenceDetails/GS1"
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Warning(
+                    $"Error creating folder structure: {ex.Message}"
+                );
+            }
+        }
+
+        private static void LoadGameFolder(
+            string folderPath,
+            Dictionary<int, DetailDescription> target
+        )
+        {
+            if (!Directory.Exists(folderPath))
+                return;
+
+            try
+            {
+                string[] files = Directory.GetFiles(folderPath, "*.txt");
+                foreach (string filePath in files)
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(filePath);
+
+                    // Skip files starting with underscore (like _README.txt)
+                    if (fileName.StartsWith("_"))
+                        continue;
+
+                    int detailId;
+                    if (!int.TryParse(fileName, out detailId))
+                    {
+                        AccessibilityMod.Core.AccessibilityMod.Logger?.Warning(
+                            $"Skipping {Path.GetFileName(filePath)} - filename must be a number"
+                        );
+                        continue;
+                    }
+
+                    string content = File.ReadAllText(filePath);
+                    string[] pages = SplitIntoPages(content);
+
+                    if (pages.Length > 0)
+                    {
+                        target[detailId] = new DetailDescription(pages);
+                        AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                            $"  Loaded detail {detailId}: {pages.Length} page(s) from {Path.GetFileName(filePath)}"
+                        );
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Warning(
+                    $"Error loading folder {folderPath}: {ex.Message}"
+                );
+            }
+        }
+
+        private static string[] SplitIntoPages(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                return new string[0];
+
+            // Split by the page separator
+            var pages = new List<string>();
+            string[] parts = content.Split(
+                new string[] { PAGE_SEPARATOR },
+                StringSplitOptions.None
+            );
+
+            foreach (string part in parts)
+            {
+                string trimmed = part.Trim();
+                if (!string.IsNullOrEmpty(trimmed))
+                {
+                    pages.Add(trimmed);
+                }
+            }
+
+            return pages.ToArray();
         }
 
         // GS1 evidence detail descriptions, keyed by detail_id (index into status_ext_bg_tbl)
@@ -89,6 +309,45 @@ After his arrest, fiancee Polly Jenkins committed suicide."
         >
         { };
 
+        private static void GetDictionaries(
+            out Dictionary<int, DetailDescription> overrideDict,
+            out Dictionary<int, DetailDescription> detailDict
+        )
+        {
+            if (!_initialized)
+                Initialize();
+
+            TitleId currentGame = TitleId.GS1;
+            try
+            {
+                if (GSStatic.global_work_ != null)
+                {
+                    currentGame = GSStatic.global_work_.title;
+                }
+            }
+            catch { }
+
+            switch (currentGame)
+            {
+                case TitleId.GS1:
+                    overrideDict = _gs1Overrides;
+                    detailDict = GS1_DETAILS;
+                    break;
+                case TitleId.GS2:
+                    overrideDict = _gs2Overrides;
+                    detailDict = GS2_DETAILS;
+                    break;
+                case TitleId.GS3:
+                    overrideDict = _gs3Overrides;
+                    detailDict = GS3_DETAILS;
+                    break;
+                default:
+                    overrideDict = _gs1Overrides;
+                    detailDict = GS1_DETAILS;
+                    break;
+            }
+        }
+
         /// <summary>
         /// Get the description for an evidence detail view.
         /// </summary>
@@ -99,33 +358,17 @@ After his arrest, fiancee Polly Jenkins committed suicide."
         {
             try
             {
-                TitleId currentGame = TitleId.GS1;
-                try
-                {
-                    if (GSStatic.global_work_ != null)
-                    {
-                        currentGame = GSStatic.global_work_.title;
-                    }
-                }
-                catch { }
+                Dictionary<int, DetailDescription> overrideDict;
+                Dictionary<int, DetailDescription> detailDict;
+                GetDictionaries(out overrideDict, out detailDict);
 
-                Dictionary<int, DetailDescription> detailDict = null;
-                switch (currentGame)
+                // Check overrides first
+                if (overrideDict != null && overrideDict.ContainsKey(detailId))
                 {
-                    case TitleId.GS1:
-                        detailDict = GS1_DETAILS;
-                        break;
-                    case TitleId.GS2:
-                        detailDict = GS2_DETAILS;
-                        break;
-                    case TitleId.GS3:
-                        detailDict = GS3_DETAILS;
-                        break;
-                    default:
-                        detailDict = GS1_DETAILS;
-                        break;
+                    return overrideDict[detailId].GetPage(pageIndex);
                 }
 
+                // Fall back to defaults
                 if (detailDict != null && detailDict.ContainsKey(detailId))
                 {
                     return detailDict[detailId].GetPage(pageIndex);
@@ -148,34 +391,12 @@ After his arrest, fiancee Polly Jenkins committed suicide."
         {
             try
             {
-                TitleId currentGame = TitleId.GS1;
-                try
-                {
-                    if (GSStatic.global_work_ != null)
-                    {
-                        currentGame = GSStatic.global_work_.title;
-                    }
-                }
-                catch { }
+                Dictionary<int, DetailDescription> overrideDict;
+                Dictionary<int, DetailDescription> detailDict;
+                GetDictionaries(out overrideDict, out detailDict);
 
-                Dictionary<int, DetailDescription> detailDict = null;
-                switch (currentGame)
-                {
-                    case TitleId.GS1:
-                        detailDict = GS1_DETAILS;
-                        break;
-                    case TitleId.GS2:
-                        detailDict = GS2_DETAILS;
-                        break;
-                    case TitleId.GS3:
-                        detailDict = GS3_DETAILS;
-                        break;
-                    default:
-                        detailDict = GS1_DETAILS;
-                        break;
-                }
-
-                return detailDict != null && detailDict.ContainsKey(detailId);
+                return (overrideDict != null && overrideDict.ContainsKey(detailId))
+                    || (detailDict != null && detailDict.ContainsKey(detailId));
             }
             catch
             {
@@ -190,33 +411,17 @@ After his arrest, fiancee Polly Jenkins committed suicide."
         {
             try
             {
-                TitleId currentGame = TitleId.GS1;
-                try
-                {
-                    if (GSStatic.global_work_ != null)
-                    {
-                        currentGame = GSStatic.global_work_.title;
-                    }
-                }
-                catch { }
+                Dictionary<int, DetailDescription> overrideDict;
+                Dictionary<int, DetailDescription> detailDict;
+                GetDictionaries(out overrideDict, out detailDict);
 
-                Dictionary<int, DetailDescription> detailDict = null;
-                switch (currentGame)
+                // Check overrides first
+                if (overrideDict != null && overrideDict.ContainsKey(detailId))
                 {
-                    case TitleId.GS1:
-                        detailDict = GS1_DETAILS;
-                        break;
-                    case TitleId.GS2:
-                        detailDict = GS2_DETAILS;
-                        break;
-                    case TitleId.GS3:
-                        detailDict = GS3_DETAILS;
-                        break;
-                    default:
-                        detailDict = GS1_DETAILS;
-                        break;
+                    return overrideDict[detailId].PageCount;
                 }
 
+                // Fall back to defaults
                 if (detailDict != null && detailDict.ContainsKey(detailId))
                 {
                     return detailDict[detailId].PageCount;

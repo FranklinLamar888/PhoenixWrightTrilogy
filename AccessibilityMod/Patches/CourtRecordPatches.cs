@@ -282,7 +282,7 @@ namespace AccessibilityMod.Patches
                 }
                 else
                 {
-                    sb.Append("Detailed image view");
+                    sb.Append($"No description. Detail ID: {in_id}. ");
                 }
 
                 // Add page info if multi-page

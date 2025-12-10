@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using AccessibilityMod.Utilities;
 
 namespace AccessibilityMod.Services
 {
     /// <summary>
-    /// Service for mapping speaker sprite IDs to character names.
-    /// Each game (GS1, GS2, GS3) has its own frame02 sprite sheet with different indices.
-    /// For GS3, we use the actual sprite index (after remapping) which is unique per nameplate.
+    /// Service for mapping speaker IDs to character names.
+    /// Supports hot-reload from external JSON files in UserData folder.
     /// </summary>
     public static class CharacterNameService
     {
@@ -14,11 +15,25 @@ namespace AccessibilityMod.Services
         private static bool _initialized = false;
         private static TitleId _cachedTitle = TitleId.GS1;
 
+        // Override dictionaries loaded from external JSON files
+        private static Dictionary<int, string> _gs1Overrides = new Dictionary<int, string>();
+        private static Dictionary<int, string> _gs2Overrides = new Dictionary<int, string>();
+        private static Dictionary<int, string> _gs3Overrides = new Dictionary<int, string>();
+
+        private static string ConfigFolder
+        {
+            get
+            {
+                // MelonLoader UserData folder is in the game directory
+                string gameDir = AppDomain.CurrentDomain.BaseDirectory;
+                return Path.Combine(Path.Combine(gameDir, "UserData"), "AccessibilityMod");
+            }
+        }
+
         // GS1 sprite index to character name mapping
         // Verified from GalleryActionStudioCtrl.CHARACTER_TABLE
         private static readonly Dictionary<int, string> GS1_NAMES = new Dictionary<int, string>
         {
-            // Main characters
             { 2, "Phoenix Wright" },
             { 3, "Police Officer" },
             { 4, "Maya Fey" },
@@ -28,7 +43,6 @@ namespace AccessibilityMod.Services
             { 9, "Miles Edgeworth" },
             { 10, "Winston Payne" },
             { 12, "Marvin Grossberg" },
-            // Episode 1-4 witnesses/characters
             { 16, "Penny Nichols" },
             { 17, "Wendy Oldbag" },
             { 18, "Sal Manella" },
@@ -44,12 +58,11 @@ namespace AccessibilityMod.Services
             { 31, "Lotta Hart" },
             { 32, "Yanni Yogi" },
             { 33, "Manfred von Karma" },
-            { 34, "Parrot" },
+            { 34, "Polly" },
             { 36, "Caretaker" },
             { 37, "Bailiff" },
             { 38, "Teacher" },
             { 39, "Miles Edgeworth" },
-            // Rise from the Ashes (episode 5)
             { 43, "Chief of Detectives" },
             { 44, "Ema Skye" },
             { 45, "Lana Skye" },
@@ -115,6 +128,7 @@ namespace AccessibilityMod.Services
             { 5, "Judge" },
             { 7, "Mia Fey" },
             { 9, "Winston Payne" },
+            { 11, "Dahlia Hawthorne" },
             { 42, "Marvin Grossberg" },
         };
 
@@ -124,7 +138,129 @@ namespace AccessibilityMod.Services
                 return;
 
             _initialized = true;
+            LoadOverridesFromFiles();
             AccessibilityMod.Core.AccessibilityMod.Logger?.Msg("CharacterNameService initialized");
+        }
+
+        /// <summary>
+        /// Reload character name overrides from external JSON files.
+        /// Call this to hot-reload changes without restarting the game.
+        /// </summary>
+        public static void ReloadFromFiles()
+        {
+            LoadOverridesFromFiles();
+            ClearCache();
+            AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                "CharacterNameService reloaded from files"
+            );
+        }
+
+        private static void LoadOverridesFromFiles()
+        {
+            _gs1Overrides.Clear();
+            _gs2Overrides.Clear();
+            _gs3Overrides.Clear();
+
+            try
+            {
+                string folder = ConfigFolder;
+
+                // Create folder if needed
+                if (!Directory.Exists(folder))
+                {
+                    Directory.CreateDirectory(folder);
+                }
+
+                // Create sample files if they don't exist
+                CreateSampleConfigFilesIfMissing(folder);
+
+                // Load override files
+                LoadOverrideFile(Path.Combine(folder, "GS1_Names.json"), _gs1Overrides);
+                LoadOverrideFile(Path.Combine(folder, "GS2_Names.json"), _gs2Overrides);
+                LoadOverrideFile(Path.Combine(folder, "GS3_Names.json"), _gs3Overrides);
+
+                int totalOverrides =
+                    _gs1Overrides.Count + _gs2Overrides.Count + _gs3Overrides.Count;
+                if (totalOverrides > 0)
+                {
+                    AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                        $"Loaded {totalOverrides} character name overrides from config files"
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Warning(
+                    $"Error loading character name overrides: {ex.Message}"
+                );
+            }
+        }
+
+        private static void LoadOverrideFile(string filePath, Dictionary<int, string> target)
+        {
+            if (!File.Exists(filePath))
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                    $"Config file not found: {filePath}"
+                );
+                return;
+            }
+
+            try
+            {
+                string json = File.ReadAllText(filePath);
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                    $"Loading {Path.GetFileName(filePath)}, {json.Length} bytes"
+                );
+                var parsed = SimpleJsonParser.ParseIntStringDictionary(json);
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                    $"Parsed {parsed.Count} entries from {Path.GetFileName(filePath)}"
+                );
+                foreach (var kvp in parsed)
+                {
+                    target[kvp.Key] = kvp.Value;
+                    AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                        $"  Loaded override: {kvp.Key} = {kvp.Value}"
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Warning(
+                    $"Error parsing {Path.GetFileName(filePath)}: {ex.Message}"
+                );
+            }
+        }
+
+        private static void CreateSampleConfigFilesIfMissing(string folder)
+        {
+            try
+            {
+                string sampleContent =
+                    @"{
+    ""_comment"": ""Add character name overrides here. Keys are sprite IDs, values are names."",
+    ""_example"": ""To add a mapping: remove the underscore prefix and set the ID and name"",
+    ""_5"": ""Example Character Name""
+}";
+                string[] files = { "GS1_Names.json", "GS2_Names.json", "GS3_Names.json" };
+                foreach (string file in files)
+                {
+                    string path = Path.Combine(folder, file);
+                    if (!File.Exists(path))
+                    {
+                        File.WriteAllText(path, sampleContent);
+                        AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                            $"Created sample config: {file}"
+                        );
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AccessibilityMod.Core.AccessibilityMod.Logger?.Warning(
+                    $"Error creating sample config files: {ex.Message}"
+                );
+            }
         }
 
         /// <summary>
@@ -169,25 +305,36 @@ namespace AccessibilityMod.Services
             {
                 string name = "";
 
-                // Get name from game-specific dictionary
+                // Get override dictionary and default dictionary for current game
+                Dictionary<int, string> overrideDict = null;
                 Dictionary<int, string> nameDict = null;
                 switch (currentGame)
                 {
                     case TitleId.GS1:
+                        overrideDict = _gs1Overrides;
                         nameDict = GS1_NAMES;
                         break;
                     case TitleId.GS2:
+                        overrideDict = _gs2Overrides;
                         nameDict = GS2_NAMES;
                         break;
                     case TitleId.GS3:
+                        overrideDict = _gs3Overrides;
                         nameDict = GS3_NAMES;
                         break;
                     default:
+                        overrideDict = _gs1Overrides;
                         nameDict = GS1_NAMES;
                         break;
                 }
 
-                if (nameDict != null && nameDict.ContainsKey(spriteId))
+                // Check overrides first (from external JSON files)
+                if (overrideDict != null && overrideDict.ContainsKey(spriteId))
+                {
+                    name = overrideDict[spriteId];
+                }
+                // Fall back to hardcoded defaults
+                else if (nameDict != null && nameDict.ContainsKey(spriteId))
                 {
                     name = nameDict[spriteId];
                 }

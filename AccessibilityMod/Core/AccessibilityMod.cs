@@ -71,6 +71,12 @@ namespace AccessibilityMod.Core
 
         private void HandleInput()
         {
+            // F5 - Hot-reload configuration files
+            if (Input.GetKeyDown(KeyCode.F5))
+            {
+                ReloadConfigFiles();
+            }
+
             // R - Repeat last output (disabled in vase puzzle, vase show, and court record modes since R has other functions)
             if (
                 Input.GetKeyDown(KeyCode.R)
@@ -258,6 +264,26 @@ namespace AccessibilityMod.Core
             else if (Input.GetKeyDown(KeyCode.H) && AccessibilityState.IsInTrialMode())
             {
                 AccessibilityState.AnnounceLifeGauge();
+            }
+        }
+
+        /// <summary>
+        /// Reload configuration files for hot-reload during development.
+        /// Press F5 in-game to trigger this.
+        /// </summary>
+        private void ReloadConfigFiles()
+        {
+            try
+            {
+                CharacterNameService.ReloadFromFiles();
+                EvidenceDetailService.ReloadFromFiles();
+                ClipboardManager.Announce("Configuration reloaded");
+                Logger.Msg("Configuration files reloaded via F5");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error reloading config files: {ex.Message}");
+                ClipboardManager.Announce("Error reloading configuration");
             }
         }
 
