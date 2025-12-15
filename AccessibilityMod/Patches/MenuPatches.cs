@@ -266,42 +266,6 @@ namespace AccessibilityMod.Patches
             }
         }
 
-        private static int GetMainMenuOptionCount(mainTitleCtrl mainTitle)
-        {
-            try
-            {
-                var field = typeof(mainTitleCtrl).GetField(
-                    "select_text_",
-                    System.Reflection.BindingFlags.NonPublic
-                        | System.Reflection.BindingFlags.Instance
-                );
-                if (field == null)
-                    return 0;
-
-                var selectText = field.GetValue(mainTitle) as titleSelectPlate.ButtonParam[][];
-                if (selectText == null)
-                    return 0;
-
-                var typeField = typeof(mainTitleCtrl).GetField(
-                    "select_type_",
-                    System.Reflection.BindingFlags.NonPublic
-                        | System.Reflection.BindingFlags.Instance
-                );
-                if (typeField == null)
-                    return 0;
-
-                int selectType = (int)typeField.GetValue(mainTitle);
-                if (selectType < 0 || selectType >= selectText.Length)
-                    return 0;
-
-                return selectText[selectType]?.Length ?? 0;
-            }
-            catch
-            {
-                return 0;
-            }
-        }
-
         #endregion
 
         #region Series Selection Patches

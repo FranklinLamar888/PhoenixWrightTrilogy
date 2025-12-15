@@ -391,19 +391,6 @@ namespace AccessibilityMod.Services
             return "";
         }
 
-        private static string GetCacheKey(int spriteId)
-        {
-            try
-            {
-                if (GSStatic.global_work_ != null)
-                {
-                    return $"{GSStatic.global_work_.title}_{spriteId}";
-                }
-            }
-            catch { }
-            return spriteId.ToString();
-        }
-
         /// <summary>
         /// Clear the name cache (useful when game changes)
         /// </summary>

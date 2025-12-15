@@ -14,10 +14,5 @@ namespace AccessibilityMod.Core
             }
             return true;
         }
-
-        public static void ClearStringBuilder(System.Text.StringBuilder sb)
-        {
-            sb.Length = 0;
-        }
     }
 }

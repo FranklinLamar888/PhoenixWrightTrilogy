@@ -197,24 +197,6 @@ namespace AccessibilityMod.Patches
             }
         }
 
-        private static int GetPageCount(recordListCtrl instance)
-        {
-            try
-            {
-                var field = typeof(recordListCtrl).GetField(
-                    "page_cnt_",
-                    System.Reflection.BindingFlags.NonPublic
-                        | System.Reflection.BindingFlags.Instance
-                );
-                if (field != null)
-                {
-                    return (int)field.GetValue(instance);
-                }
-            }
-            catch { }
-            return 1;
-        }
-
         #endregion
 
         #region Detail View
