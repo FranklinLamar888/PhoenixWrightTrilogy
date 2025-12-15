@@ -186,6 +186,7 @@ namespace AccessibilityMod.Patches
         }
 
         // Generic titleSelectPlate cursor navigation - announces selection text when cursor moves
+        // Used for yes/no confirmation dialogs and other titleSelectPlate instances
         [HarmonyPostfix]
         [HarmonyPatch(typeof(titleSelectPlate), "updateCursorPosition")]
         public static void TitleSelectPlate_UpdateCursorPosition_Postfix(
@@ -200,6 +201,23 @@ namespace AccessibilityMod.Patches
                     return;
 
                 _lastTitleSelectCursor = idx;
+
+                // Skip if this is the main menu's titleSelectPlate - PlayCursor handles it
+                var mainTitle = mainTitleCtrl.instance;
+                if (mainTitle != null)
+                {
+                    var field = typeof(mainTitleCtrl).GetField(
+                        "select_plate_",
+                        System.Reflection.BindingFlags.NonPublic
+                            | System.Reflection.BindingFlags.Instance
+                    );
+                    if (field != null)
+                    {
+                        var mainSelectPlate = field.GetValue(mainTitle) as titleSelectPlate;
+                        if (mainSelectPlate == __instance)
+                            return;
+                    }
+                }
 
                 // Get the button text at the current cursor position
                 string optionText = GetTitleSelectPlateText(__instance, idx);
@@ -777,15 +795,12 @@ namespace AccessibilityMod.Patches
         }
 
         // Selection plate cursor position change (touch input only)
-        // Note: Announcements are now handled by PlaySE_Postfix to avoid duplicates
         [HarmonyPostfix]
         [HarmonyPatch(typeof(selectPlateCtrl), "SetCursorNo")]
         public static void SetCursorNo_Postfix(selectPlateCtrl __instance, int in_cursor_no)
         {
             try
             {
-                // Only track cursor position - announcements handled by PlaySE patch
-                // Touch input also plays SE 42, so PlaySE_Postfix will announce
                 if (in_cursor_no != _lastSelectCursor && __instance.body_active)
                 {
                     _lastSelectCursor = in_cursor_no;
