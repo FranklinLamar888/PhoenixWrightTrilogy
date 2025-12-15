@@ -160,9 +160,6 @@ namespace AccessibilityMod.Services
                 foreach (var kvp in parsed)
                 {
                     target[kvp.Key] = kvp.Value;
-                    AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
-                        $"  Loaded override: {kvp.Key} = {kvp.Value}"
-                    );
                 }
             }
             catch (Exception ex)

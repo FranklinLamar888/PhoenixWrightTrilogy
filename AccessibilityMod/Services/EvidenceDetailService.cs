@@ -260,9 +260,6 @@ Press F5 in-game to reload after making changes.
                     if (pages.Length > 0)
                     {
                         target[detailId] = new DetailDescription(pages);
-                        AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
-                            $"  Loaded detail {detailId}: {pages.Length} page(s) from {Path.GetFileName(filePath)}"
-                        );
                     }
                 }
             }

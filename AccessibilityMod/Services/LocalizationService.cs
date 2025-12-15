@@ -32,6 +32,7 @@ namespace AccessibilityMod.Services
         private static Dictionary<string, string> _fallbackStrings =
             new Dictionary<string, string>();
         private static Language _currentLanguage = Language.USA;
+        private static Language _loadedLanguage = Language.USA;
         private static bool _initialized = false;
 
         private static string BaseFolder
@@ -115,6 +116,9 @@ namespace AccessibilityMod.Services
             if (!_initialized)
                 Initialize();
 
+            // Check if game language changed since last load
+            CheckLanguageChange();
+
             if (Net35Extensions.IsNullOrWhiteSpace(key))
                 return "";
 
@@ -175,6 +179,30 @@ namespace AccessibilityMod.Services
             }
         }
 
+        private static void CheckLanguageChange()
+        {
+            try
+            {
+                if (GSStatic.global_work_ != null)
+                {
+                    Language gameLanguage = GSStatic.global_work_.language;
+                    if (gameLanguage != _loadedLanguage)
+                    {
+                        AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
+                            $"Language changed from {_loadedLanguage} to {gameLanguage}, reloading localization"
+                        );
+                        _currentLanguage = gameLanguage;
+                        LoadStrings();
+
+                        // Reload character names and evidence details for new language
+                        CharacterNameService.ReloadFromFiles();
+                        EvidenceDetailService.ReloadFromFiles();
+                    }
+                }
+            }
+            catch { }
+        }
+
         private static void LoadStrings()
         {
             _strings.Clear();
@@ -198,6 +226,9 @@ namespace AccessibilityMod.Services
                     _strings[kvp.Key] = kvp.Value;
                 }
             }
+
+            // Track which language we loaded
+            _loadedLanguage = _currentLanguage;
 
             AccessibilityMod.Core.AccessibilityMod.Logger?.Msg(
                 $"Loaded {_strings.Count} strings for {GetLanguageFolderName()}, {_fallbackStrings.Count} fallback strings"

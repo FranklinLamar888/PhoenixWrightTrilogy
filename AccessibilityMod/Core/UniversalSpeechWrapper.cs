@@ -72,7 +72,7 @@ namespace AccessibilityMod.Core
         /// <param name="interrupt">Whether to interrupt current speech</param>
         public static void Speak(string text, bool interrupt = false)
         {
-            if (Net35Extensions.IsNullOrWhiteSpace(text))
+            if (!_initialized || Net35Extensions.IsNullOrWhiteSpace(text))
                 return;
 
             try

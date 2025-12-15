@@ -29,7 +29,6 @@ namespace AccessibilityMod.Core
                 // Initialize localization first (needed by other services)
                 LocalizationService.Initialize();
 
-                // Create the coroutine runner for clipboard processing
                 GameObject managerObject = new GameObject("AccessibilityMod_CoroutineRunner");
                 managerObject.AddComponent<CoroutineRunner>();
 
