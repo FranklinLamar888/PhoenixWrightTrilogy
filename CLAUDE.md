@@ -23,46 +23,49 @@ dotnet build -c Release
 - **MelonLoader References**: Use `net35` folder, not `net6`
 - **UserData Config**: Runtime overrides in `$(GamePath)\UserData\AccessibilityMod\`
 - **UniversalSpeech**: Requires `UniversalSpeech.dll` (32-bit) in the game directory for screen reader output
+- **Logs**: MelonLoader logs to `$(GamePath)\MelonLoader\Latest.log` - use `AccessibilityMod.Logger.Msg()` for debug output
 
 ## Architecture
 
 ### Core Components
 
 - **AccessibilityMod.Core.AccessibilityMod**: Main MelonMod entry point. Handles initialization and keyboard input via `OnUpdate()`
-- **SpeechManager**: Screen reader output via UniversalSpeech library (P/Invoke). Provides `Output()`, `Announce()`, `RepeatLast()` methods with duplicate prevention. Falls back to SAPI if no screen reader is running.
+- **UniversalSpeechWrapper**: Low-level P/Invoke wrapper around UniversalSpeech library for text-to-speech output
+- **SpeechManager**: Centralized speech output manager
 - **Net35Extensions**: Polyfills for .NET 3.5 compatibility (`IsNullOrWhiteSpace`, etc.)
 - **TextCleaner**: Strips formatting tags and normalizes text for screen reader output
 - **CoroutineRunner**: MonoBehaviour singleton for menu cursor tracking and delayed announcements
 
 ### Keyboard Shortcuts
 
-| Key | Context | Action |
-|-----|---------|--------|
-| F5 | Global | Hot-reload config files (character names, evidence details) |
-| R | Global (except vase/court record) | Repeat last output |
-| I | Global | Announce current state/context |
-| [ / ] | Investigation | Navigate hotspots |
-| U | Investigation | Jump to next unexamined hotspot |
-| H | Investigation | List all hotspots |
-| [ / ] | Pointing mode | Navigate target areas |
-| H | Pointing mode | List all target areas |
-| [ / ] | Luminol mode | Navigate blood evidence |
-| [ / ] | 3D Evidence | Navigate examination points |
-| [ / ] | Fingerprint mode | Navigate fingerprint locations |
-| H | Fingerprint mode | Get hint for current phase |
-| [ / ] | Video tape mode | Navigate to targets when paused |
-| H | Video tape mode | Get hint |
-| H | Vase puzzle | Get hint for current step |
-| G | Vase show (rotation) | Get hint (H used for X-axis rotation) |
-| [ / ] | Dying message | Navigate between dots |
-| H | Dying message | Get hint for spelling |
-| H | Bug sweeper | Announce state/hint |
-| F1 | Orchestra mode | Announce controls help |
-| H | Trial (not pointing) | Announce life gauge |
+| Key   | Context                           | Action                                                      |
+| ----- | --------------------------------- | ----------------------------------------------------------- |
+| F5    | Global                            | Hot-reload config files (character names, evidence details) |
+| R     | Global (except vase/court record) | Repeat last output                                          |
+| I     | Global                            | Announce current state/context                              |
+| [ / ] | Investigation                     | Navigate hotspots                                           |
+| U     | Investigation                     | Jump to next unexamined hotspot                             |
+| H     | Investigation                     | List all hotspots                                           |
+| [ / ] | Pointing mode                     | Navigate target areas                                       |
+| H     | Pointing mode                     | List all target areas                                       |
+| [ / ] | Luminol mode                      | Navigate blood evidence                                     |
+| [ / ] | 3D Evidence                       | Navigate examination points                                 |
+| [ / ] | Fingerprint mode                  | Navigate fingerprint locations                              |
+| H     | Fingerprint mode                  | Get hint for current phase                                  |
+| [ / ] | Video tape mode                   | Navigate to targets when paused                             |
+| H     | Video tape mode                   | Get hint                                                    |
+| H     | Vase puzzle                       | Get hint for current step                                   |
+| G     | Vase show (rotation)              | Get hint (H used for X-axis rotation)                       |
+| [ / ] | Dying message                     | Navigate between dots                                       |
+| H     | Dying message                     | Get hint for spelling                                       |
+| H     | Bug sweeper                       | Announce state/hint                                         |
+| F1    | Orchestra mode                    | Announce controls help                                      |
+| H     | Trial (not pointing)              | Announce life gauge                                         |
 
 ### Patches (Harmony)
 
 All patches use `[HarmonyPostfix]` (or `[HarmonyPrefix]` for capture-before-clear) to hook into game methods:
+
 - **DialoguePatches**: Multiple hooks (`arrow`, `board`, `guideIconSet`, `ClearText`) for robust dialogue capture
 - **MenuPatches**: Hooks `tanteiMenu`, `selectPlateCtrl` for detective menu and choice navigation
 - **InvestigationPatches**: Hooks `inspectCtrl` for investigation mode cursor feedback
@@ -102,6 +105,7 @@ All patches use `[HarmonyPostfix]` (or `[HarmonyPrefix]` for capture-before-clea
 ## Configuration Files
 
 Character names and evidence details can be overridden via files in `UserData/AccessibilityMod/`:
+
 - `GS1_Names.json`, `GS2_Names.json`, `GS3_Names.json` - Character name mappings (key=sprite ID, value=name)
 - `EvidenceDetails/GS1/*.txt`, `GS2/*.txt`, `GS3/*.txt` - Evidence detail descriptions (filename=detail_id, `===` separates pages)
 
@@ -110,7 +114,9 @@ Press **F5** in-game to hot-reload these files without restarting.
 ## Important Patterns
 
 ### Harmony Patches
+
 When adding new patches, verify method names exist in `./Decompiled/` first. The game's API differs from typical Unity conventions. Common issues:
+
 - Method names are often lowercase (`arrow`, `board`, `name_plate`)
 - Enum parameters must match exactly (e.g., `lifeGaugeCtrl.Gauge_State`)
 - Private methods can be patched but require correct signatures
@@ -120,16 +126,19 @@ When adding new patches, verify method names exist in `./Decompiled/` first. The
 Speaker IDs differ per game and come from two sources that must be handled differently:
 
 **Two Speaker ID Sources:**
+
 1. `GSStatic.message_work_.speaker_id` - Raw speaker ID from the message system
 2. `_lastSpeakerId` in DialoguePatches - Captured from `name_plate()` callback's `in_name_no` parameter
 
 **GS1/GS2 Behavior:**
+
 - Both sources typically contain the same raw speaker ID
 - `CharacterNameService` dictionaries (`GS1_NAMES`, `GS2_NAMES`) are keyed by these raw IDs
 - **Problem**: `message_work_.speaker_id` can become stale during certain game modes (e.g., 3D evidence examination in GS1 Episode 5). When examining a hotspot, dialogue plays but `speaker_id` still holds the value from before entering 3D mode.
 - **Solution**: Prefer `_lastSpeakerId` from `name_plate()` calls, fall back to `message_work_.speaker_id`
 
 **GS3 Behavior:**
+
 - GS3 uses `name_id_tbl` (in `messageBoardCtrl`) to remap raw speaker IDs to sprite indices for display
 - The `name_plate()` method receives the raw ID, then remaps it internally for the sprite
 - `GS3_NAMES` dictionary is keyed by raw `message_work_.speaker_id` values, NOT the remapped sprite indices
@@ -137,6 +146,7 @@ Speaker IDs differ per game and come from two sources that must be handled diffe
 - **Solution**: Always use `message_work_.speaker_id` for GS3
 
 **Implementation** (in `DialoguePatches.TryOutputDialogue()`):
+
 ```csharp
 if (isGS3)
     speakerId = message_work_.speaker_id & 0x7F;  // GS3: use message_work
@@ -147,15 +157,57 @@ else
 When names are wrong, check which game is active via `GSStatic.global_work_.title`. Unknown IDs are logged automatically.
 
 ### .NET 3.5 Limitations
+
 - No `string.IsNullOrWhiteSpace` - use `Net35Extensions.IsNullOrWhiteSpace`
 - No `StringBuilder.Clear()` - use `sb.Length = 0`
 - No `string.Join(IEnumerable)` - use `.ToArray()` first
 
+## Game State Access
+
+Key global variables for accessing game state:
+
+- `GSStatic.global_work_` - Global game state (current title, scene state)
+- `GSStatic.global_work_.title` - Current game: 0=GS1, 1=GS2, 2=GS3
+- `GSStatic.global_work_.r.no_0` - Scene type (4=questioning, 7=testimony)
+- `GSStatic.message_work_` - Current dialogue/message state
+- `GSStatic.message_work_.speaker_id` - Current speaker ID
+- `GSStatic.inspect_data_` - Investigation hotspot definitions
+
+Mode detection uses singleton instances:
+
+- `inspectCtrl.instance?.is_play` - Investigation mode active
+- `scienceInvestigationCtrl.instance?.is_play` - 3D evidence mode active
+- `messageBoardCtrl.instance` - Dialogue system instance
+
+## Navigator Pattern
+
+All navigators follow a consistent structure:
+
+```csharp
+public static class [Xxx]Navigator {
+    private static List<[Info]> _items;
+    private static int _currentIndex;
+    private static bool _wasActive;
+
+    public static void Update()               // Called each frame from OnUpdate()
+    public static bool Is[Xxx]Active()        // Check if mode is active
+    public static void Refresh[Items]()       // Parse game data into _items
+    public static void NavigateNext()         // [ key - move forward
+    public static void NavigatePrevious()     // ] key - move backward
+    public static void Announce[State/Hint]() // H key - context help
+}
+```
+
+Position descriptions use the game's internal coordinate system (1920x1080, resolution-independent) mapped to "top/middle/bottom left/center/right".
+
 ## Decompiled Reference
 
 The `./Decompiled/` folder contains decompiled game code for reference. Key files:
+
 - `messageBoardCtrl.cs` - Dialogue display system
 - `inspectCtrl.cs` - Investigation cursor and hotspots
 - `GSStatic.cs` - Global game state
 - `lifeGaugeCtrl.cs` - Trial health gauge
 - `tanteiMenu.cs`, `selectPlateCtrl.cs` - Menu systems
+
+**Important**: Verify method names in decompiled code before creating Harmony patches. The game uses lowercase method names (`arrow`, `board`, `name_plate`) unlike typical Unity conventions.
