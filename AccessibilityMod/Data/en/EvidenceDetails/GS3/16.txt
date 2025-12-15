@@ -1,0 +1,7 @@
+A simplified overhead map depicts a river crossing named "Eagle River," spanned by a suspension bridge connecting a parking area on the left to a cliffside path on the right.
+
+The map is divided vertically by a wide blue body of water labeled "Eagle River" in large white text with a black outline. To the left of the river, the terrain is green with dense patches of dark brown, irregular shapes representing forest or thicket. A measurement scale labeled "5 yds" appears in white over the dark foliage in the lower-left quadrant. To the right of the river, a sheer cliff face is rendered in textured light brown, bordered by green land on the far right.
+
+A horizontal suspension bridge crosses the river near the top of the map. It consists of a deck marked with vertical blue lines. Two thin white cables form a large "X" shape over the water, connecting four circular white anchor points located on the opposing banks. These cables run diagonally: one connects the upper-left bank to the lower-right cliff, and the other connects the lower-left bank to the upper-right cliff.
+
+On the left bank, a rectangular light-grey parking area sits adjacent to the bridge entrance. A black icon of a sedan is positioned in the center of this lot, facing right. On the bridge deck itself, specifically on the right side near the cliff, a small, tilted white rectangle lies askew across the slats. A path continues from the bridge on the right side, winding through the green terrain atop the cliff.

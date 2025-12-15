@@ -1,0 +1,7 @@
+A schematic map outlines the Global Studios lot, identifying two studios, a central gate, and an employee area.
+
+The left section features two large square rooms connected by a hallway. "Studio 1" is located at the top left. The hallway extends to the right from Studio 1, with a branch leading downward into "Studio 2" at the bottom center.
+
+To the right of the junction for Studio 2, a vertical barrier labeled "Gate" crosses the hallway, visually separating the two studios from the eastern section of the map. This gate is marked with diagonal stripes.
+
+On the right side of the gate, the corridor forks. The northern path leads to an exit labeled "Main Gate." The southern path leads into a large room labeled "Employee Area." Inside the Employee Area, a dark rectangular section along the left wall is identified as the "Dressing Room."

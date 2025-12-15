@@ -1,0 +1,5 @@
+{
+    "_comment": "Add character name overrides here. Keys are sprite IDs, values are names.",
+    "_example": "To add a mapping: remove the underscore prefix and set the ID and name",
+    "_5": "Example Character Name"
+}
