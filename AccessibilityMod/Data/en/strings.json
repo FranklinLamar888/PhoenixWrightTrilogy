@@ -84,7 +84,7 @@
     "luminol.trace_discovered": "Blood trace found! {0} remaining.",
     "luminol.all_discovered": "Blood trace found! All traces discovered.",
     "luminol.no_traces": "No blood traces found",
-    "luminol.pan_hint": "Move cursor to edges to pan view.",
+    "luminol.pan_hint": "Press Q to pan if needed.",
 
     "_section_fingerprint": "=== Fingerprint Mode ===",
     "fingerprint.start": "Fingerprint examination. {0} locations to examine. Use [ and ] to navigate, Enter to examine. Press H for hint.",
@@ -330,7 +330,7 @@
     "video_tape.cursor_on_target": ", cursor on target {0}",
     "video_tape.pause_first": "Pause the video first with Backspace",
     "video_tape.no_targets_at_frame": "No targets available at this frame",
-    "video_tape.hint_first": "First viewing: Find Goodman's locker lit up (open). Pause when you hear target available, press ] to select it, then E to present. Current frame: {0}.",
+    "video_tape.hint_first": "First viewing: Find Goodman's locker lit up (open) - around frame 120. Pause when you hear target available, press ] to select it, then E to present. Current frame: {0}.",
     "video_tape.hint_second": "Second viewing: Something falls from the locker. A wrong target appears around frame 460. The correct falling object is around frame 490. Fast forward with Enter past 460, pause with Backspace around 490, press ] to cycle through targets until you find the falling object, then E to present. Current frame: {0}.",
     "video_tape.hint_third": "Third viewing: The correct target is around frame 1360. Fast forward with Enter, pause with Backspace around 1360, press ] to select the target, then E to present. Current frame: {0}.",
     "video_tape.hint_fourth": "Fourth viewing: The correct target is around frame 900. Fast forward with Enter, pause with Backspace around 900, press ] to select the target, then E to present. Current frame: {0}.",
