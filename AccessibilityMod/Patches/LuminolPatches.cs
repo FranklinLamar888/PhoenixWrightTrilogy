@@ -10,20 +10,8 @@ namespace AccessibilityMod.Patches
     [HarmonyPatch]
     public static class LuminolPatches
     {
-        /// <summary>
-        /// Patch for when a bloodstain's discovery animation completes.
-        /// The state changes from Discovery to Discovered when the animation ends.
-        /// </summary>
-        [HarmonyPatch(typeof(luminolBloodstain), "WaitAnum", MethodType.Enumerator)]
-        [HarmonyPostfix]
-        public static void OnBloodstainAnimComplete(luminolBloodstain __instance)
-        {
-            // This runs on each yield, check if state just changed to Discovered
-            if (__instance.state_ == BloodstainState.Discovered)
-            {
-                // The announcement is handled by checking state in the navigator
-            }
-        }
+        // Note: The "Press Enter to examine" prompt after blood discovery is handled
+        // in LuminolNavigator.CheckAcquiredState() by monitoring the minigame state.
 
         /// <summary>
         /// Patch for when blood starts appearing (spray hit).

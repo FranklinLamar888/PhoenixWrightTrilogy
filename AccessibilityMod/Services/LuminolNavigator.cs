@@ -16,6 +16,8 @@ namespace AccessibilityMod.Services
         private static int _currentIndex = -1;
         private static bool _wasActive = false;
         private static float _lastBgPosX = 0f;
+        private static bool _wasInAcquiredState = false;
+        private static FieldInfo _stateField = null;
 
         public class HotspotInfo
         {
@@ -78,9 +80,55 @@ namespace AccessibilityMod.Services
                     }
                 }
                 catch { }
+
+                // Check if we entered the "Acquired" state (waiting for Enter to examine)
+                CheckAcquiredState();
             }
 
             _wasActive = isActive;
+        }
+
+        /// <summary>
+        /// Checks if the luminol minigame entered the Acquired state and announces the prompt.
+        /// </summary>
+        private static void CheckAcquiredState()
+        {
+            try
+            {
+                if (luminolMiniGame.instance == null)
+                    return;
+
+                // Cache the state field via reflection
+                if (_stateField == null)
+                {
+                    _stateField = typeof(luminolMiniGame).GetField(
+                        "state",
+                        BindingFlags.NonPublic | BindingFlags.Instance
+                    );
+                }
+
+                if (_stateField == null)
+                    return;
+
+                var stateValue = _stateField.GetValue(luminolMiniGame.instance);
+                bool isInAcquiredState =
+                    stateValue != null && (luminolState)stateValue == luminolState.Acquired;
+
+                if (isInAcquiredState && !_wasInAcquiredState)
+                {
+                    // Just entered Acquired state - announce prompt
+                    SpeechManager.Announce(
+                        L.Get("navigation.press_enter_examine"),
+                        TextType.Investigation
+                    );
+                }
+
+                _wasInAcquiredState = isInAcquiredState;
+            }
+            catch
+            {
+                // Silently ignore errors reading state
+            }
         }
 
         private static void OnLuminolStart()
@@ -128,6 +176,7 @@ namespace AccessibilityMod.Services
         {
             _hotspots.Clear();
             _currentIndex = -1;
+            _wasInAcquiredState = false;
         }
 
         /// <summary>
