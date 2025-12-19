@@ -1,4 +1,5 @@
 using System;
+using AccessibilityMod.Patches;
 using AccessibilityMod.Services;
 using MelonLoader;
 using UnityEngine;
@@ -74,6 +75,7 @@ namespace AccessibilityMod.Core
             VaseShowNavigator.Update();
             DyingMessageNavigator.Update();
             BugSweeperNavigator.Update();
+            FirstLaunchDialogPatches.Update();
         }
 
         public override void OnDeinitializeMelon()

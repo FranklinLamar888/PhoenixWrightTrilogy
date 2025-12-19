@@ -445,5 +445,9 @@
   "orchestra.mode": "Mode: {0}",
   "orchestra.play_mode": "Play mode: {0}",
   "orchestra.now_playing": "Now playing: {0}",
-  "orchestra.opened": "Music player. Press F1 for controls."
+  "orchestra.opened": "Music player. Press F1 for controls.",
+
+  "_section_first_launch": "=== First Launch Dialogs ===",
+  "first_launch.terms_dialog_opened": "Terms of Service and Privacy Policy",
+  "first_launch.release_notes_opened": "Release Notes"
 }
