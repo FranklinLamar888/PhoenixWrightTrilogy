@@ -352,11 +352,12 @@ namespace AccessibilityMod.Patches
                 var comment = __instance.comment;
                 if (comment?.line_ != null)
                 {
+                    sb.Append(".");
                     foreach (var line in comment.line_)
                     {
                         if (line != null && !Net35Extensions.IsNullOrWhiteSpace(line.text))
                         {
-                            sb.Append(line.text);
+                            sb.Append($" {line.text}");
                         }
                     }
                 }
