@@ -12,7 +12,6 @@ namespace AccessibilityMod.Patches
     public static class CourtRecordPatches
     {
         private static int _lastRecordCursor = -1;
-        private static int _lastRecordPage = -1;
         private static int _lastRecordType = -1;
 
         // Detail view state tracking
@@ -43,7 +42,6 @@ namespace AccessibilityMod.Patches
 
                 // Reset tracking
                 _lastRecordCursor = -1;
-                _lastRecordPage = -1;
                 _lastRecordType = mode;
             }
             catch (Exception ex)
@@ -164,46 +162,8 @@ namespace AccessibilityMod.Patches
             }
         }
 
-        private static int GetPageNum(recordListCtrl instance)
-        {
-            try
-            {
-                // page_num_ is a property that reads from advCtrl
-                if (instance.record_type == 0)
-                {
-                    return advCtrl.instance.sub_window_.note_.item_page;
-                }
-                return advCtrl.instance.sub_window_.note_.man_page;
-            }
-            catch
-            {
-                return 0;
-            }
-        }
-
         #endregion
 
-        #region Page Changes
-
-        // Called when page changes (after animation)
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(recordListCtrl), "recordPageChange")]
-        public static void RecordPageChange_Postfix(recordListCtrl __instance)
-        {
-            try
-            {
-                int pageNum = GetPageNum(__instance);
-                _lastRecordPage = pageNum;
-            }
-            catch (Exception ex)
-            {
-                AccessibilityMod.Core.AccessibilityMod.Logger?.Error(
-                    $"Error in RecordPageChange patch: {ex.Message}"
-                );
-            }
-        }
-
-        #endregion
 
         #region Detail View
 
@@ -380,7 +340,6 @@ namespace AccessibilityMod.Patches
         public static void ResetState()
         {
             _lastRecordCursor = -1;
-            _lastRecordPage = -1;
             _lastRecordType = -1;
             _currentDetailId = -1;
             _currentDetailPageCount = 0;
