@@ -19,7 +19,7 @@ using MelonLoader;
     typeof(AccessibilityMod.Core.AccessibilityMod),
     "Phoenix Wright Accessibility",
     "1.0.0",
-    "Accessibility Mod Author"
+    "LordLuceus"
 )]
 [assembly: MelonGame(
     "CAPCOM",
