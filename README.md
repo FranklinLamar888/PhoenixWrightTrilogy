@@ -43,21 +43,21 @@ Each release includes two assets: an installer executable for automatic installa
 1. Download the zip file from the latest release
 2. Run the included `MelonLoader.Installer.exe` and install MelonLoader to your game
 3. Copy `AccessibilityMod.dll` to the `Mods` folder in your game directory
-4. Copy `UniversalSpeech.dll` and `nvdaControllerClient.dll` to your game directory
+4. Copy `MelonAccessibilityLib.dll`, `UniversalSpeech.dll` and `nvdaControllerClient.dll` to your game directory
 5. Copy the `Data` folder contents to `[Game Directory]/UserData/AccessibilityMod/`
 6. Launch the game
 
 ## Keyboard Shortcuts
 
-| Key | Context | Action |
-|-----|---------|--------|
-| **F5** | Global | Hot-reload config files |
-| **R** | Global | Repeat last output |
-| **I** | Global | Announce current state/context |
-| **[ / ]** | Navigation modes | Navigate items (hotspots, evidence, targets, etc.) |
-| **U** | Investigation | Jump to next unexamined hotspot |
-| **H** | Context-sensitive | List hotspots, get hints, or announce life gauge |
-| **F1** | Orchestra mode | Announce controls help |
+| Key       | Context           | Action                                             |
+| --------- | ----------------- | -------------------------------------------------- |
+| **F5**    | Global            | Hot-reload config files                            |
+| **R**     | Global            | Repeat last output                                 |
+| **I**     | Global            | Announce current state/context                     |
+| **[ / ]** | Navigation modes  | Navigate items (hotspots, evidence, targets, etc.) |
+| **U**     | Investigation     | Jump to next unexamined hotspot                    |
+| **H**     | Context-sensitive | List hotspots, get hints, or announce life gauge   |
+| **F1**    | Orchestra mode    | Announce controls help                             |
 
 ## Configuration
 
@@ -74,7 +74,8 @@ UserData/AccessibilityMod/
 │       ├── GS1/*.txt
 │       ├── GS2/*.txt
 │       └── GS3/*.txt
-└── [other languages]/      # ja, fr, de, ko, zh-Hans, zh-Hant, pt-BR, es
+├── pt-BR/                  # Brazilian Portuguese
+└── zh-Hans/                # Chinese (Simplified)
 ```
 
 ## Building from Source
@@ -98,8 +99,10 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for developmen
 ## Translations
 
 The mod supports multiple languages. Currently included translations:
+
 - English
-- Chinese
+- Brazilian Portuguese
+- Chinese (Simplified)
 
 Want to help translate? See [TRANSLATORS.md](TRANSLATORS.md) for guidelines.
 
