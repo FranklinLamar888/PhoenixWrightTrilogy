@@ -55,6 +55,9 @@
     <ItemGroup>
       <DataFiles Include="Data\**\*.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(DataFiles)" DestinationFiles="@(DataFiles->'$(GamePath)\UserData\AccessibilityMod\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy
+      SourceFiles="@(DataFiles)"
+      DestinationFiles="@(DataFiles->'$(GamePath)\UserData\AccessibilityMod\%(RecursiveDir)%(Filename)%(Extension)')"
+    />
   </Target>
 </Project>
