@@ -4,4 +4,4 @@ A seção esquerda apresenta duas grandes salas quadradas conectadas por um corr
 
 À direita da junção para o Estúdio 2, uma barreira vertical rotulada "Portão" cruza o corredor, separando visualmente os dois estúdios da seção leste do mapa. Este portão está marcado com listras diagonais.
 
-No lado direito do portão, o corredor se bifurca. O caminho norte leva a uma saída rotulada "Portão Principal". O caminho sul leva a uma grande sala rotulada "Área dos Funcionários". Dentro da Área dos Funcionários, uma seção retangular escura ao longo da parede esquerda é identificada como o "Camarim".
+No lado direito do portão, o corredor se bifurca. O caminho norte leva a uma saída rotulada "Portão Principal". O caminho sul leva a uma grande sala rotulada "Área dos Funcionários". Dentro da Área dos Funcionários, uma seção retangular escura ao longo da parede esquerda é identificada como "Camarim".
